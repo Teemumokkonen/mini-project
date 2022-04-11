@@ -62,19 +62,27 @@ class path_gen():
                 prev_node = nodes(x_rand, y_rand, nearest_id)
                 nodes_list = np.append(nodes_list, prev_node)
 
+    def isLineThruObj(self, coords, x, y):
+        a = y - coords[1]
+        b = coords[0] - x 
+        c = a*(coords[0]) + b*(coords[1])
+        for obs in self.cylinders:
+            dist = np.abs(a*obs[0] + b*obs[1] + c)/(np.sqrt(np.power(a, 2) + np.power(b, 2)))
+            if dist < self.radious:
+                return True
 
     def NearestNeighbors(self, nodes, x ,y):
         min_dist = np.inf
         min_id = 0
         for i, loc in enumerate(nodes):
             coords = loc.get_loc()
-            print(coords)
-            print(x, y)
-            dist = np.linalg.norm([coords[0] - x, coords[1] - y])
-            print(dist)
-            if dist < min_dist:
-                min_dist = dist
-                min_id = i
+            if not self.isLineThruObj(coords, x, y):
+                dist = np.linalg.norm([coords[0] - x, coords[1] - y])
+
+                if dist < min_dist:
+                    min_dist = dist
+                    min_id = i
+                    
         return min_id
 
     def random_position(self):
