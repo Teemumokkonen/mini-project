@@ -1,7 +1,5 @@
 
-from cgi import print_form
-from xml.dom.minicompat import NodeList
-from matplotlib.pyplot import close
+from flask import current_app
 import numpy as np
 from random import random
 
@@ -18,6 +16,10 @@ class nodes():
 
     def get_loc(self):
         return np.array([self.x, self.y])
+
+    def get_prev(self):
+        return self.prev
+
 
 class path_gen():
     def __init__(self, x, y, theta):
@@ -62,24 +64,39 @@ class path_gen():
             if self.collision(x_rand, y_rand) == False:
                 nearest_id = self.NearestNeighbors(nodes_list, x_rand, y_rand)
                 x_step, y_step = self.step(x_rand, y_rand, nodes_list[nearest_id].get_loc()) 
-
-                self.plot.update_point(x_step, y_step, nodes_list[nearest_id].get_loc())
-                prev_node = nodes(x_step, y_step, nearest_id)
+                prev_node = nodes(x_step, y_step, prev_node)
                 nodes_list = np.append(nodes_list, prev_node)
+                self.plot.update_point(x_step, y_step, nodes_list[nearest_id].get_loc())
 
-                if np.linalg.norm([self.desired_state[0] - x_step, self.desired_state[1] - y_step]) < 0.5:
+                if np.linalg.norm([self.desired_state[0] - x_step, self.desired_state[1] - y_step]) < 0.7:
                     nodes_list = np.append(nodes_list, nodes(self.desired_state[0], self.desired_state[1], prev_node))
                     break
-        
-        print("goal is close")
 
+        self.plot.update_point(x_step, y_step, nodes_list[nearest_id].get_loc())
+
+        route = self.parse_route(nodes_list)
+        print(route)
+        self.plot.plot_route(route)
+        return nodes_list
+
+    def parse_route(self, nodes_list):
+        node = nodes_list[-1]
+        current = node.get_loc()
+        route = np.array([current])
+        while current[0] != self.robot_state[0] and current[1] != self.robot_state[1]:
+            node = node.get_prev()
+            current = node.get_loc()
+            append = np.array([current])
+            route = np.concatenate((route, append))
+        return np.flip(route)
+        
     def step(self, x, y, closest_node, stepSize=0.4):
         """
         Calculates the step size for the given random point
         """
         delta = [x - closest_node[0], y - closest_node[1]]
         length = np.linalg.norm(delta)
-        delta = (delta / length) * np.min(stepSize, length)
+        delta = (delta / length) * min(stepSize, length)
 
         new_point = (closest_node[0]+delta[0], closest_node[1]+delta[1])
         return new_point
@@ -123,9 +140,9 @@ class path_gen():
         sx = self.desired_state[0] - self.robot_state[0]
         sy = self.desired_state[1] - self.robot_state[1]
 
-        posx = self.robot_state[0] - (sx / 2.) + rx * sx * 2
-        posy = self.robot_state[1] - (sy / 2.) + ry * sy * 2
-        return posx, posy
+        x = self.robot_state[0] - (sx / 2.) + rx * sx * 2
+        y = self.robot_state[1] - (sy / 2.) + ry * sy * 2
+        return x, y
 
     def collision(self, x, y):
         """
