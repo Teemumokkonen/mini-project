@@ -54,9 +54,12 @@ class sim_mobile_robot: # Visualizer on 2D plot
             self.draw_icon( robot_state )
         else: # update the x marker
             self.pos_pl.set_data(robot_state[0], robot_state[1]) # plot only last position
-        # Pause to show the movement
-        plt.pause(5)  
+        # Pause to show the movement  
 
+    def update_point(self, x, y, prev_coords):
+        self.ax.scatter(x, y)
+        self.ax.plot([prev_coords[0], x], [prev_coords[1], y])
+        plt.pause(2)
 
     # OPTIONAL PLOT, not necessary but provide nice view in simulation
     #-----------------------------------------------------------------
@@ -88,6 +91,7 @@ class sim_mobile_robot: # Visualizer on 2D plot
             for i in range( len(thWh) ):
                 self.moro_patch[2+i] = self.ax.add_patch( plt.Rectangle( (wh_x[i], wh_y[i]), 
                     wheel_size[0], wheel_size[1], angle=thWh_deg[i], color='k') )
+
         else: # update existing patch
             self.moro_patch[0].set( center=(px, py) )
             self.moro_patch[1].set_offsets( ar_st )

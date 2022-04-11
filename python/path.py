@@ -1,7 +1,7 @@
-from platform import node
-from tracemalloc import start
+
 import numpy as np
 from random import random
+
 from robot import robot
 
 import simulation
@@ -13,6 +13,8 @@ class nodes():
         self.y = y
         self.prev = prev
 
+    def get_loc(self):
+        return np.array([self.x, self.y])
 
 class path_gen():
     def __init__(self, x, y, theta):
@@ -24,42 +26,54 @@ class path_gen():
         self.cylinders = np.array([[-1.1, -1.1], [-1.1, 0], [-1.1, 1.1], [0, -1.1 ], [0, 0], [0, 1.1], [1.1, -1.1], [1.1, 0], [1.1, 1.1]])
         self.radious = 0.15
         self.eps = 0.5
+
+        # Make the plot for the route planning simulation
         self.plot = simulation.sim_mobile_robot()
         self.plot.set_field((-3, 3), (-3, 3))
-
         self.plot.plot_obs(self.cylinders, self.radious)
         self.plot.show_goal(self.desired_state)
         
 
     def RRT(self, x, y, theta, iterations = 1000):
-        """x, y, theta = robot.get_pose()"""
-        robot_state = np.array([x, y, theta])
-        self.plot.update_trajectory(robot_state)
+        """
+        This method calculates the route for the robot according to the RRT algorithm 
+
+        args:
+            x (float): initial x pose of the robot
+            y (float): initial y pose of the robot
+            theta (float): initial theta pose of the robot
+            iterations (int): How many iterations algorithm runs
+
+        returns:
+            route (numpy array): contains checkpoints to the goal
+        """
+        self.robot_state = np.array([x, y, theta])
+        self.plot.update_trajectory(self.robot_state)
+        # Add the initial pose as the root for the tree
         prev_node = nodes(x, y)
+        # All nodes in the tree
         nodes_list = np.array([prev_node])
 
         for i in range(iterations):
             x_rand, y_rand = self.random_position()
-            if self.collision(x_rand, y_rand):
-                # skip the point if it is not accessable
-                continue  
-
-            nearest_id = self.NearestNeighbors(nodes_list, x, y)
-            prev_node = nodes(x_rand, y_rand, nearest_id)
-            nodes_list = np.append(nodes_list, prev_node)
+            if self.collision(x_rand, y_rand) == False:
+                nearest_id = self.NearestNeighbors(nodes_list, x, y)
+                self.plot.update_point(x_rand, y_rand, nodes_list[nearest_id].get_loc())
+                prev_node = nodes(x_rand, y_rand, nearest_id)
+                nodes_list = np.append(nodes_list, prev_node)
 
 
-    def NearestNeighbors(self, nodes,x ,y):
+    def NearestNeighbors(self, nodes, x ,y):
         min_dist = np.inf
         min_id = 0
         for i, loc in enumerate(nodes):
-            dist = np.linalg.norm(loc[0] -x, loc[1] - y)
+            coords = loc.get_loc()
+            dist = np.linalg.norm([coords[0] -x, coords[1] - y])
             if dist < min_dist:
                 min_dist = dist
                 min_id = i
 
-        return i
-
+        return min_id
 
     def random_position(self):
         rx = random()
@@ -73,8 +87,14 @@ class path_gen():
         return posx, posy
 
     def collision(self, x, y):
+        print("x: ", str(x))
+        print("y: ", str(y))
+        if x < -3 or x > 3 or y < -3 or y > 3:
+            return True
+
         for cyl in self.cylinders:
-            dist = np.linalg.norm(x - cyl[0], y - cyl[1])
+            dist = np.linalg.norm([x - cyl[0], y - cyl[1]])
+            # check if the point is inside the cylinders or outside of the map
             if dist < self.radious + self.eps:
                 return True
 
