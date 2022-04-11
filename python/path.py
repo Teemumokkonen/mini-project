@@ -57,7 +57,7 @@ class path_gen():
         for i in range(iterations):
             x_rand, y_rand = self.random_position()
             if self.collision(x_rand, y_rand) == False:
-                nearest_id = self.NearestNeighbors(nodes_list, x, y)
+                nearest_id = self.NearestNeighbors(nodes_list, x_rand, y_rand)
                 self.plot.update_point(x_rand, y_rand, nodes_list[nearest_id].get_loc())
                 prev_node = nodes(x_rand, y_rand, nearest_id)
                 nodes_list = np.append(nodes_list, prev_node)
@@ -68,14 +68,23 @@ class path_gen():
         min_id = 0
         for i, loc in enumerate(nodes):
             coords = loc.get_loc()
-            dist = np.linalg.norm([coords[0] -x, coords[1] - y])
+            print(coords)
+            print(x, y)
+            dist = np.linalg.norm([coords[0] - x, coords[1] - y])
+            print(dist)
             if dist < min_dist:
                 min_dist = dist
                 min_id = i
-
         return min_id
 
     def random_position(self):
+        """
+        calculates some random position
+
+        returns:
+            posx (float): random x position in the map
+            posy (float): random y position in the map
+        """
         rx = random()
         ry = random()
 
@@ -87,8 +96,17 @@ class path_gen():
         return posx, posy
 
     def collision(self, x, y):
-        print("x: ", str(x))
-        print("y: ", str(y))
+        """
+        Checks for the collision in the map area
+
+        args:
+            x (float): x pose 
+            y (float): y pose
+
+        returns:
+            collision (bool): if the there is collision or not
+        """
+
         if x < -3 or x > 3 or y < -3 or y > 3:
             return True
 
