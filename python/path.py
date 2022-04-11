@@ -1,4 +1,7 @@
 
+from cgi import print_form
+from xml.dom.minicompat import NodeList
+from matplotlib.pyplot import close
 import numpy as np
 from random import random
 
@@ -58,9 +61,28 @@ class path_gen():
             x_rand, y_rand = self.random_position()
             if self.collision(x_rand, y_rand) == False:
                 nearest_id = self.NearestNeighbors(nodes_list, x_rand, y_rand)
-                self.plot.update_point(x_rand, y_rand, nodes_list[nearest_id].get_loc())
-                prev_node = nodes(x_rand, y_rand, nearest_id)
+                x_step, y_step = self.step(x_rand, y_rand, nodes_list[nearest_id].get_loc()) 
+
+                self.plot.update_point(x_step, y_step, nodes_list[nearest_id].get_loc())
+                prev_node = nodes(x_step, y_step, nearest_id)
                 nodes_list = np.append(nodes_list, prev_node)
+
+                if np.linalg.norm([self.desired_state[0] - x_step, self.desired_state[1] - y_step]) < 0.5:
+                    nodes_list = np.append(nodes_list, nodes(self.desired_state[0], self.desired_state[1], prev_node))
+                    break
+        
+        print("goal is close")
+
+    def step(self, x, y, closest_node, stepSize=0.4):
+        """
+        Calculates the step size for the given random point
+        """
+        delta = [x - closest_node[0], y - closest_node[1]]
+        length = np.linalg.norm(delta)
+        delta = (delta / length) * np.min(stepSize, length)
+
+        new_point = (closest_node[0]+delta[0], closest_node[1]+delta[1])
+        return new_point
 
     def isLineThruObj(self, coords, x, y):
         a = y - coords[1]
@@ -70,6 +92,8 @@ class path_gen():
             dist = np.abs(a*obs[0] + b*obs[1] + c)/(np.sqrt(np.power(a, 2) + np.power(b, 2)))
             if dist < self.radious:
                 return True
+
+        return False
 
     def NearestNeighbors(self, nodes, x ,y):
         min_dist = np.inf
@@ -82,7 +106,7 @@ class path_gen():
                 if dist < min_dist:
                     min_dist = dist
                     min_id = i
-                    
+
         return min_id
 
     def random_position(self):
