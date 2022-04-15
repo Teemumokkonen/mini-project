@@ -56,26 +56,24 @@ class path_gen():
         prev_node = nodes(x, y)
         # All nodes in the tree
         nodes_list = np.array([prev_node])
-
         for i in range(iterations):
             x_rand, y_rand = self.random_position()
             if self.collision(x_rand, y_rand) == False:
                 nearest_id = self.NearestNeighbors(nodes_list, x_rand, y_rand)
                 x_step, y_step = self.step(x_rand, y_rand, nodes_list[nearest_id].get_loc()) 
-                prev_node = nodes(x_step, y_step, prev_node)
+                prev_node = nodes(x_step, y_step, nodes_list[nearest_id])
                 nodes_list = np.append(nodes_list, prev_node)
                 self.plot.update_point(x_step, y_step, nodes_list[nearest_id].get_loc())
 
-                if np.linalg.norm([self.desired_state[0] - x_step, self.desired_state[1] - y_step]) < 0.7:
+                if np.linalg.norm([self.desired_state[0] - x_step, self.desired_state[1] - y_step]) < 0.6:
                     nodes_list = np.append(nodes_list, nodes(self.desired_state[0], self.desired_state[1], prev_node))
                     break
 
-        self.plot.update_point(x_step, y_step, nodes_list[nearest_id].get_loc())
+        self.plot.update_point(self.desired_state[0], self.desired_state[1], prev_node.get_loc())
 
         route = self.parse_route(nodes_list)
-        print(route)
         self.plot.plot_route(route)
-        return nodes_list
+        return route
 
     def parse_route(self, nodes_list):
         node = nodes_list[-1]
@@ -86,7 +84,7 @@ class path_gen():
             current = node.get_loc()
             append = np.array([current])
             route = np.concatenate((route, append))
-        return np.flip(route)
+        return route
         
     def step(self, x, y, closest_node, stepSize=0.4):
         """

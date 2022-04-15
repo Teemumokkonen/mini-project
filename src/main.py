@@ -1,13 +1,62 @@
 #!/usr/bin/env python
-"""import rospy
+
+import rospy
 from geometry_msgs.msg import PoseStamped
-from nav_msgs.msg import Odometry"""
+from nav_msgs.msg import Odometry
 import math
 from utils import path
 from utils import robot
 import numpy as np
+from geometry_msgs.msg import Twist
+
 
 robs = robot.robot_state()
+pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
+def go_to_goal_controller(route, x=0 ,y=0, yaw=0):
+   
+    i = len(route) - 1
+    dist_to_goal = 0.2
+    print(route)
+    print("moving to: ", str(route[i]))
+    while route[i][0] != x and route[i][1] != y:
+        x_rob, y_rob, theta = robs.get_pose()
+        v = 0.5*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
+        theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
+        theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
+        omega = 0.5*(theta_d - theta)
+
+        msg = Twist()
+        msg.linear.x = v
+        msg.angular.z = omega
+        pub.publish(msg)
+
+        if np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) < 0.1:
+            i -= 1
+            print(i)
+            print("moving to: ", str(route[i]))
+
+    # final go to goal controller
+    while np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) < 0.0001:
+        x_rob, y_rob, theta = robs.get_pose()
+        v = 0.5*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
+        theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
+        theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
+        omega = 0.5*(theta_d - theta)
+
+        msg = Twist()
+        msg.linear.x = v
+        msg.angular.z = omega
+        pub.publish(msg)
+
+
+    msg = Twist()
+    msg.linear.x = 0
+    msg.angular.z = 0
+    pub.publish(msg)
+
+    return True
+
 
 def goal_callback(msg):
     """
@@ -19,16 +68,24 @@ def goal_callback(msg):
     returns:
         path (Array): List containing the coords of the route to the goal 
     """
-    x = msg.pose.position.x
-    y = msg.pose.position.y
+    x_goal = msg.pose.position.x
+    y_goal = msg.pose.position.y
     
     x_ang = msg.pose.orientation.x
     y_ang = msg.pose.orientation.y
     z_ang = msg.pose.orientation.z
     w_ang = msg.pose.orientation.w
     roll, pitch, yaw = euler_from_quaternion(x_ang, y_ang, z_ang, w_ang)
-    path_generator = path.path_gen(x, y, yaw)
-    route = path_generator.generate_path(robs)
+
+    # init path generator goal point
+    path_generator = path.path_gen(x_goal, y_goal, yaw)
+
+    # Get route to desired location for the robot location.
+    x, y, theta = robs.get_pose()
+    route = path_generator.RRT(x, y, theta)
+    isGoal = go_to_goal_controller(route, x_goal, y_goal, yaw)
+    if isGoal:
+        print("Robot has reached goal succesfully")
 
 
 def euler_from_quaternion(x, y, z, w):
@@ -69,12 +126,12 @@ def odom_callback(msg):
     roll, pitch, yaw = euler_from_quaternion(x_ang, y_ang, z_ang, w_ang)
     robs.update_pose(x, y, yaw)
 
-# Get the goal pose from the user
+
 def listener():
     """
     Listener function for the needed topics
     """
-    """
+
     rospy.init_node('listener', anonymous=True)
 
     # Update the pose of the robot
@@ -83,12 +140,7 @@ def listener():
     rospy.Subscriber("/move_base_simple/goal", PoseStamped, goal_callback)
 
     rospy.spin()
-    """
-
-    # for testing use some default robot location 
-    path_generator = path.path_gen(-2, -2, -np.pi)
-    # Get route to desired location.
-    route = path_generator.RRT(2, 2, -np.pi)
+    
 
 if __name__ == '__main__':
     listener()
