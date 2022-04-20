@@ -36,7 +36,7 @@ extract the zip file to some ros workspace source directory inside a route_plan 
 
 After this the file folder should look like this
 
-'''bash
+``` bash 
 route_plan/
 ├── CMakeLists.txt
 ├── package.xml
@@ -49,7 +49,7 @@ route_plan/
         ├── path.py
         ├── robot.py
         └── simulation.py
-'''
+```
 after this you should build your workspace with:
 
 catkin_make
