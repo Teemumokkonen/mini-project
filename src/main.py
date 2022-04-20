@@ -3,11 +3,14 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+
 import math
 from utils import path
 from utils import robot
 import numpy as np
-from geometry_msgs.msg import Twist
+
 
 
 robs = robot.robot_state()
@@ -24,10 +27,16 @@ def go_to_goal_controller(route, x=0 ,y=0, yaw=0):
 
     while route[i][0] != x and route[i][1] != y:
         x_rob, y_rob, theta = robs.get_pose()
-        v = 0.5*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
+
+        x_0 = robs.check_if_near_obs()
+        if np.linalg.norm([x_0[0] - x_rob, x_0[1] - y_rob]) < 0.2:
+            v = 0.4*np.linalg.norm([x_rob - x_0[0], y_rob  - x_0[0]])
+            print(v)
+        else:    
+            v = 0.4*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
         theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
         theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
-        omega = 0.7*(theta_d - theta)
+        omega = 0.9*(theta_d - theta)
 
         msg = Twist()
         msg.linear.x = v
@@ -41,12 +50,16 @@ def go_to_goal_controller(route, x=0 ,y=0, yaw=0):
     # final go to goal controller
  
     while np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) > 0.001:
-        x_rob, y_rob, theta = robs.get_pose()
+        x_0 = robs.check_if_near_obs()
+        if np.linalg.norm([x_0[0] - x_rob, x_0[1] - y_rob]) < 0.3:
+            v = 0.4*np.linalg.norm([x_rob - x_0[0], y_rob  - x_0[0]])
+        else:    
+            v = 0.4*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
 
-        v = 0.5*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
+        v = 0.4*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
         theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
         theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
-        omega = 0.7*(theta_d - theta)
+        omega = 0.9*(theta_d - theta)
 
         msg = Twist()
         msg.linear.x = v
@@ -130,6 +143,11 @@ def odom_callback(msg):
     roll, pitch, yaw = euler_from_quaternion(x_ang, y_ang, z_ang, w_ang)
     robs.update_pose(x, y, yaw)
 
+def scan_callback(msg):
+
+    increments = msg.angle_increment
+    ranges = msg.ranges
+    robs.update_scans(ranges, increments)
 
 def listener():
     """
@@ -142,6 +160,9 @@ def listener():
     rospy.Subscriber("/odom", Odometry, odom_callback)
     # get goal pose
     rospy.Subscriber("/move_base_simple/goal", PoseStamped, goal_callback)
+
+    # get laser scans
+    rospy.Subscriber("/scan", LaserScan, scan_callback)
 
     rospy.spin()
     
