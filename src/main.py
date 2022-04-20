@@ -17,32 +17,36 @@ def go_to_goal_controller(route, x=0 ,y=0, yaw=0):
    
     i = len(route) - 1
     dist_to_goal = 0.2
-    print(route)
+
+    print("Starting controller!")
+
     print("moving to: ", str(route[i]))
+
     while route[i][0] != x and route[i][1] != y:
         x_rob, y_rob, theta = robs.get_pose()
         v = 0.5*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
         theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
         theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
-        omega = 0.5*(theta_d - theta)
+        omega = 0.7*(theta_d - theta)
 
         msg = Twist()
         msg.linear.x = v
         msg.angular.z = omega
         pub.publish(msg)
-
+        
         if np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) < 0.1:
             i -= 1
-            print(i)
             print("moving to: ", str(route[i]))
 
     # final go to goal controller
-    while np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) < 0.0001:
+ 
+    while np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) > 0.001:
         x_rob, y_rob, theta = robs.get_pose()
+
         v = 0.5*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
         theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
         theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
-        omega = 0.5*(theta_d - theta)
+        omega = 0.7*(theta_d - theta)
 
         msg = Twist()
         msg.linear.x = v

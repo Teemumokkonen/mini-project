@@ -55,11 +55,7 @@ class sim_mobile_robot: # Visualizer on 2D plot
         else: # update the x marker
             self.pos_pl.set_data(robot_state[0], robot_state[1]) # plot only last position
         # Pause to show the movement  
-    
-    def plot_route(self, route):
-        #self.ax.plot(route[:, 0], route[:, 1], color='green')
-        plt.pause(5)
-
+ 
 
     def update_point(self, x, y, prev_coords):
         self.ax.scatter(x, y)

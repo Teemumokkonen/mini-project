@@ -72,7 +72,7 @@ class path_gen():
         self.plot.update_point(self.desired_state[0], self.desired_state[1], prev_node.get_loc())
 
         route = self.parse_route(nodes_list)
-        self.plot.plot_route(route)
+
         return route
 
     def parse_route(self, nodes_list):
@@ -84,6 +84,7 @@ class path_gen():
             current = node.get_loc()
             append = np.array([current])
             route = np.concatenate((route, append))
+        
         return route
         
     def step(self, x, y, closest_node, stepSize=0.4):
@@ -103,7 +104,7 @@ class path_gen():
         c = a*(coords[0]) + b*(coords[1])
         for obs in self.cylinders:
             dist = np.abs(a*obs[0] + b*obs[1] + c)/(np.sqrt(np.power(a, 2) + np.power(b, 2)))
-            if dist < self.radious:
+            if dist < self.radious + 0.1:
                 return True
 
         return False
