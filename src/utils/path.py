@@ -66,8 +66,9 @@ class path_gen():
                 self.plot.update_point(x_step, y_step, nodes_list[nearest_id].get_loc())
 
                 if np.linalg.norm([self.desired_state[0] - x_step, self.desired_state[1] - y_step]) < 0.6:
-                    nodes_list = np.append(nodes_list, nodes(self.desired_state[0], self.desired_state[1], prev_node))
-                    break
+                    if not self.isLineThruObj(nodes_list[-1].get_loc(), x_step, y_step):
+                        nodes_list = np.append(nodes_list, nodes(self.desired_state[0], self.desired_state[1], prev_node))
+                        break
 
         self.plot.update_point(self.desired_state[0], self.desired_state[1], prev_node.get_loc())
 
@@ -104,7 +105,7 @@ class path_gen():
         c = a*(coords[0]) + b*(coords[1])
         for obs in self.cylinders:
             dist = np.abs(a*obs[0] + b*obs[1] + c)/(np.sqrt(np.power(a, 2) + np.power(b, 2)))
-            if dist < self.radious + 0.1:
+            if dist < self.radious + 0.07:
                 return True
 
         return False

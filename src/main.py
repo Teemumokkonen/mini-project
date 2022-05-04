@@ -29,37 +29,38 @@ def go_to_goal_controller(route, x=0 ,y=0, yaw=0):
         x_rob, y_rob, theta = robs.get_pose()
 
         x_0 = robs.check_if_near_obs()
-        if np.linalg.norm([x_0[0] - x_rob, x_0[1] - y_rob]) < 0.2:
-            v = 0.4*np.linalg.norm([x_rob - x_0[0], y_rob  - x_0[0]])
-            print(v)
+        if np.linalg.norm([x_0[0] - x_rob, x_0[1] - y_rob]) < 0.08: # if too close to wall, avoid it
+            v = 0.2*np.linalg.norm([x_rob - x_0[0], y_rob  - x_0[0]])
+            print("avoiding object")
         else:    
-            v = 0.4*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
+            v = 0.7*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
         theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
         theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
-        omega = 0.9*(theta_d - theta)
+        omega = 2.0*(theta_d - theta)
 
         msg = Twist()
         msg.linear.x = v
         msg.angular.z = omega
         pub.publish(msg)
         
-        if np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) < 0.1:
+        if np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) < 0.25:
             i -= 1
             print("moving to: ", str(route[i]))
 
     # final go to goal controller
- 
-    while np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) > 0.001:
-        x_0 = robs.check_if_near_obs()
-        if np.linalg.norm([x_0[0] - x_rob, x_0[1] - y_rob]) < 0.3:
-            v = 0.4*np.linalg.norm([x_rob - x_0[0], y_rob  - x_0[0]])
-        else:    
-            v = 0.4*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
 
-        v = 0.4*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
+    while np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob]) > 0.01: # if too close to wall, avoid it
+        x_0 = robs.check_if_near_obs()
+        x_rob, y_rob, theta = robs.get_pose()
+        if np.linalg.norm([x_0[0] - x_rob, x_0[1] - y_rob]) < 0.08:
+            v = 0.2*np.linalg.norm([x_rob - x_0[0], y_rob  - x_0[0]])
+            print("avoiding object")
+        else:    
+            v = 0.7*np.linalg.norm([route[i][0] - x_rob, route[i][1] - y_rob])
+
         theta_d = np.arctan2(route[i][1]- y_rob, route[i][0] - x_rob) 
         theta_d = ((theta_d + np.pi) % (2*np.pi) ) - np.pi
-        omega = 0.9*(theta_d - theta)
+        omega = 2.0*(theta_d - theta)
 
         msg = Twist()
         msg.linear.x = v
